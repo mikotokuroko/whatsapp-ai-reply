@@ -1,0 +1,34 @@
+{
+  "name": "whatsapp-ai-reply",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node scripts/wasm.mjs && wrangler dev --ip 127.0.0.1",
+    "build": "node scripts/wasm.mjs && wrangler deploy --dry-run",
+    "deploy": "node scripts/wasm.mjs && wrangler deploy",
+    "test": "node scripts/wasm.mjs && vitest run",
+    "typecheck": "tsc --noEmit",
+    "lint": "oxlint",
+    "check": "npm test && npm run typecheck && npm run lint && npm run build",
+    "smoke": "node scripts/smoke.mjs",
+    "setup": "node scripts/setup.mjs"
+  },
+  "dependencies": {
+    "@oxidezap/baileyrs": "0.3.8",
+    "qrcode": "1.5.4"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "5.20261026.1",
+    "@types/qrcode": "1.5.5",
+    "oxlint": "1.85.0",
+    "typescript": "7.0.2",
+    "vitest": "4.1.12",
+    "wrangler": "4.152.0"
+  },
+  "overrides": {
+    "undici": "7.30.1"
+  },
+  "version": "0.1.0",
+  "license": "MIT",
+  "description": "Self-hosted WhatsApp AI replies on Cloudflare Workers"
+}

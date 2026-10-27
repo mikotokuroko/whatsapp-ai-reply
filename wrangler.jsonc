@@ -1,0 +1,12 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "whatsapp-ai-reply",
+  "main": "src/worker.ts",
+  "compatibility_date": "2026-10-26",
+  "compatibility_flags": ["nodejs_compat"],
+  "define": { "globalThis.process.getBuiltinModule": "undefined" },
+  "rules": [{ "type": "CompiledWasm", "globs": ["**/*.wasm"], "fallthrough": false }],
+  "durable_objects": { "bindings": [{ "name": "REPLY_BOT", "class_name": "ReplyBot" }] },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["ReplyBot"] }],
+  "observability": { "enabled": false }
+}
