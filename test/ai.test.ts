@@ -25,3 +25,12 @@ it('bounds output and refuses malformed or oversized responses',async()=>{
  await expect(generate(config,messages,vi.fn().mockResolvedValue(Response.json({})))).rejects.toThrow('No text');
  expect(buildRequest(config,messages,true).body.generationConfig).toEqual({maxOutputTokens:128});
 });
+
+it.each(['gemini','openai','anthropic','openrouter','custom'])('encodes images for %s without leaking internal fields', provider => {
+ const config=validateConfig({...fixture,provider,baseUrl:'https://api.vendor.com/v1'});
+ const body=buildRequest(config,[{role:'user',content:'Read this',image:{mimeType:'image/jpeg',data:'AQID'}}]).body as any;
+ if(provider==='gemini') expect(body.contents[0].parts[1]).toEqual({inlineData:{mimeType:'image/jpeg',data:'AQID'}});
+ else if(provider==='anthropic') expect(body.messages[0].content[0]).toEqual({type:'image',source:{type:'base64',media_type:'image/jpeg',data:'AQID'}});
+ else expect(body.messages[1].content[1]).toEqual({type:'image_url',image_url:{url:'data:image/jpeg;base64,AQID'}});
+ expect(JSON.stringify(body)).not.toContain('"image":');
+});

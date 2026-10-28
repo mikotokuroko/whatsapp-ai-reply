@@ -87,7 +87,7 @@ Open the URL printed by Wrangler, unlock with `ADMIN_TOKEN`, then:
 | OpenRouter | Chat Completions | openrouter.ai/api/v1 |
 | Custom | OpenAI-compatible Chat Completions | Your HTTPS base URL + /chat/completions |
 
-This does not promise compatibility with every model: Responses-only models, tool-only/audio/image models, special authentication schemes and provider-specific request requirements are outside this release. No tools, grounding, media processing, streaming or automatic paid fallback. Output is capped at 768 tokens and 3,500 characters; some reasoning-heavy models may return no text within that budget. Use **Test AI connection** to check your selected model.
+This does not promise compatibility with every model: Responses-only models, tool-only/audio/image models, special authentication schemes and provider-specific request requirements are outside this release. No tools, grounding, audio/video processing, streaming output or automatic paid fallback. Output is capped at 768 tokens and 3,500 characters; some reasoning-heavy models may return no text within that budget. Use **Test AI connection** to check your selected model.
 
 Changing provider or custom API address requires a new key; an existing key is never silently carried to another destination. Redirects are rejected. Custom endpoints cannot use HTTP, explicit IP addresses, local hostnames, credentials in URLs or nonstandard ports. Only use a domain you trust and control or a known provider: validation does not attest to a domain's owner or its DNS configuration.
 
@@ -107,7 +107,7 @@ Changing provider or custom API address requires a new key; an existing key is n
 
 The admin password grants full control of this bot. The API key, allowed numbers, instructions and WhatsApp credentials are stored in private Durable Object storage. No public API exposes them; the authenticated setup page returns settings without the API key. Application logs and Cloudflare observability are disabled by default.
 
-A WhatsApp linked device can receive other chats. The allowlist controls application processing and responses, **not** the linked device's account-level access. The app disables historical sync and forwards only eligible text plus any enabled per-contact memory to the chosen AI provider. That provider's privacy, training, retention, region and billing terms apply. The WhatsApp library persists protocol/cryptographic state, which may include retry records; “memory off” does not mean the protocol stores nothing.
+A WhatsApp linked device can receive other chats. The allowlist controls application processing and responses, **not** the linked device's account-level access. The app disables historical sync and forwards only eligible text/photos plus any enabled per-contact memory to the chosen AI provider. That provider's privacy, training, retention, region and billing terms apply. The WhatsApp library persists protocol/cryptographic state, which may include retry records; “memory off” does not mean the protocol stores nothing.
 
 Never commit `.dev.vars`, `.private`, `.wrangler`, credentials, QR codes, exported chat data or a deployment-specific account configuration. No credentials, accounts or existing live setup are included in this repository.
 
@@ -125,3 +125,9 @@ Tests use synthetic contacts and keys. They never pair a WhatsApp account or cal
 Source layout: `worker.ts` owns connection and queue state; `settings.ts` validates configuration; `ai.ts` adapts provider requests; `messages.ts` filters contacts and isolates memory; `storage.ts` persists protocol records and duplicate claims; `page.ts` serves the private admin UI.
 
 MIT licensed. See [LICENSE](LICENSE) and [dependency/reference notes](THIRD_PARTY.md).
+
+## Photo replies
+
+Allowed contacts can send an ordinary JPEG, PNG or WebP photo up to 4 MB, with an optional caption/question. Choose a vision-capable model. Gemini, OpenAI, Anthropic and compatible OpenRouter/custom chat endpoints receive the image in their native request format; a text-only model will reject it. The text-only connection test does not verify vision support.
+
+Photos use the existing daily attempt limit, cooldown and duplicate protection. View-once images, stickers, documents and videos are ignored. Oversized/unsupported photos are skipped. Download/AI errors appear in setup status; no automatic retries. Image bytes are processed transiently and not written to app storage or conversation memory. If memory is enabled, only the caption/placeholder and AI reply are kept, so later follow-ups cannot re-inspect the photo. Provider retention terms still apply.

@@ -16,3 +16,12 @@ it('keeps contact memories separate, bounded and expiring',()=>{
  expect(c.read('one',now)).toHaveLength(8);expect(c.read('one',now+1800001)).toEqual([]);
  c.append('two','x','y');c.clear();expect(c.read('two')).toEqual([]);
 });
+
+it('allows captioned and captionless photos only from fresh allowed contacts',()=>{
+ const message={...incoming,message:{imageMessage:{mimetype:'image/jpeg',fileLength:123,caption:'Read this'}}};
+ expect(acceptMessage(message,contacts,now-1000,now)?.text).toBe('Read this');
+ expect(acceptMessage(message,contacts,now-1000,now)?.image).toBe(message);
+ expect(acceptMessage(message,[],now-1000,now)).toBeUndefined();
+ expect(acceptMessage({...message,messageTimestamp:0},contacts,0,now)).toBeUndefined();
+ expect(acceptMessage({...message,message:{imageMessage:{mimetype:'image/jpeg',fileLength:123}}},contacts,now-1000,now)?.text).toContain('Describe');
+});

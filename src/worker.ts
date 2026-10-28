@@ -1,3 +1,4 @@
+import { downloadImage } from './images';
 import { DurableObject } from 'cloudflare:workers';
 import makeSocket, { createAuthenticationState, setLoggerSink } from '@oxidezap/baileyrs/host';
 import type { HostWASocket, HostBaileysEventMap } from '@oxidezap/baileyrs/host';
@@ -202,12 +203,16 @@ export class ReplyBot extends DurableObject<Env> {
     if (!reserved || !valid()) return;
     const context = config.memory ? this.conversations.read(item.contact) : [];
     let text: string;
-    try { text = await generate(config, [...context, { role: 'user', content: item.text }]); }
-    catch (error) { this.lastEvent = error instanceof AIError ? error.message : 'AI reply failed'; return; }
+    try {
+      const image = item.image ? await downloadImage(socket, item.image) : undefined;
+      if (!valid()) return;
+      text = await generate(config, [...context, { role: 'user', content: item.text, image }]);
+    }
+    catch (error) { this.lastEvent = error instanceof AIError ? error.message : 'Image download or AI reply failed'; return; }
     if (!valid()) return;
     await socket.sendMessage(item.recipient, { text: '🤖 ' + text });
     this.lastEvent = 'Reply sent at ' + new Date().toISOString();
-    if (config.memory && valid()) this.conversations.append(item.contact, item.text, text);
+    if (config.memory && valid()) this.conversations.append(item.contact, (item.image ? "[Photo, not retained] " : "") + item.text, text);
   }
 }
 

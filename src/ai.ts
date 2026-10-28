@@ -1,5 +1,6 @@
+import type { ImageInput } from './images';
 import type { Config } from './settings';
-export type Message = { role: 'user' | 'assistant'; content: string };
+export type Message = { role: 'user' | 'assistant'; content: string; image?: ImageInput };
 export class AIError extends Error { override name = "AIError"; }
 export function buildRequest(config: Config, messages: Message[], test = false) {
   const { provider, model, apiKey, instructions } = config;
@@ -9,15 +10,15 @@ export function buildRequest(config: Config, messages: Message[], test = false) 
   if (provider === 'gemini') {
     url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
     headers['x-goog-api-key'] = apiKey;
-    body = { systemInstruction: { parts: [{ text: instructions }] }, contents: messages.map(m => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }] })), generationConfig: { maxOutputTokens: max } };
+    body = { systemInstruction: { parts: [{ text: instructions }] }, contents: messages.map(m => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }, ...(m.image ? [{ inlineData: { mimeType: m.image.mimeType, data: m.image.data } }] : [])] })), generationConfig: { maxOutputTokens: max } };
   } else if (provider === 'anthropic') {
     url = 'https://api.anthropic.com/v1/messages';
     headers['x-api-key'] = apiKey; headers['anthropic-version'] = '2023-06-01';
-    body = { model, system: instructions, messages, max_tokens: max };
+    body = { model, system: instructions, messages: messages.map(m => ({ role: m.role, content: m.image ? [{ type: 'image', source: { type: 'base64', media_type: m.image.mimeType, data: m.image.data } }, { type: 'text', text: m.content }] : m.content })), max_tokens: max };
   } else {
     const base = provider === 'openai' ? 'https://api.openai.com/v1' : provider === 'openrouter' ? 'https://openrouter.ai/api/v1' : config.baseUrl;
     url = base + '/chat/completions'; headers.authorization = 'Bearer ' + apiKey;
-    body = { model, messages: [{ role: 'system', content: instructions }, ...messages], stream: false,
+    body = { model, messages: [{ role: 'system', content: instructions }, ...messages.map(m => ({ role: m.role, content: m.image ? [{ type: 'text', text: m.content }, { type: 'image_url', image_url: { url: 'data:' + m.image.mimeType + ';base64,' + m.image.data } }] : m.content }))], stream: false,
       ...(provider === 'openai' ? { max_completion_tokens: max } : { max_tokens: max }) };
   }
   return { url, headers, body };

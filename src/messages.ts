@@ -1,9 +1,10 @@
+import { photo } from './images';
 import type { Message } from './ai';
 export interface Envelope {
   key: { id?: string | null; remoteJid?: string | null; remoteJidAlt?: string | null; fromMe?: boolean | null };
   messageTimestamp?: unknown; message?: any;
 }
-export interface Accepted { recipient: string; contact: string; claim: string; text: string }
+export interface Accepted { recipient: string; contact: string; claim: string; text: string; image?: Envelope }
 export function acceptMessage(message: Envelope, contacts: string[], connectedAt: number, now = Date.now()): Accepted | undefined {
   const { key } = message;
   const jid = key.remoteJid || '';
@@ -14,9 +15,10 @@ export function acceptMessage(message: Envelope, contacts: string[], connectedAt
   const sentAt = Number(message.messageTimestamp) * 1000;
   if (!Number.isFinite(sentAt) || sentAt < connectedAt || now - sentAt > 120000 || sentAt > now + 60000) return;
   const body = message.message?.ephemeralMessage?.message ?? message.message;
-  const text = body?.conversation ?? body?.extendedTextMessage?.text;
+  const image = photo(body) ? message : undefined
+  const text = image ? (body.imageMessage.caption || 'Describe this photo and any visible text. Respond in the conversation language.') : body?.conversation ?? body?.extendedTextMessage?.text;
   if (typeof text !== 'string' || !text.trim() || text.length > 4000) return;
-  return { recipient: jid, contact, claim: JSON.stringify([contact, key.id]), text: text.trim() };
+  return { recipient: jid, contact, claim: JSON.stringify([contact, key.id]), text: text.trim(), ...(image ? { image } : {}) };
 }
 export class Conversations {
   private entries = new Map<string, { at: number; messages: Message[] }>();
